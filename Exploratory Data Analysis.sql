@@ -1,83 +1,84 @@
--- Exploratory Data Analysis
+-- Step 2: Exploratory Data Analysis (EDA)
 
+-- The goal of this step is to explore the data, uncover trends, patterns, and interesting insights such as outliers.
+-- Typically, during EDA, you may have specific questions or hypotheses in mind, but it is also useful to explore the data broadly.
+
+-- Inspecting the cleaned data
 SELECT *
 FROM layoffs_staging2;
 
--- Maximum laid off and Maximum Percent laid off
-SELECT MAX(total_laid_off), MAX(percentage_laid_off)
+-- Finding maximum values for layoffs and percentage laid off
+SELECT MAX(total_laid_off) AS max_laid_off, MAX(percentage_laid_off) AS max_percent_laid_off
 FROM layoffs_staging2;
 
--- Total laid off by companies in descending order
-SELECT company, SUM(total_laid_off) AS total_off
+-- Total layoffs by company in descending order
+SELECT company, SUM(total_laid_off) AS total_laid_off
 FROM layoffs_staging2
 GROUP BY company
-ORDER BY total_off DESC;
+ORDER BY total_laid_off DESC;
 
--- Total laid off by industry in descending order
-SELECT industry, SUM(total_laid_off) AS total_off
+-- Total layoffs by industry in descending order
+SELECT industry, SUM(total_laid_off) AS total_laid_off
 FROM layoffs_staging2
 GROUP BY industry
-ORDER BY total_off DESC;
+ORDER BY total_laid_off DESC;
 
--- Total laid off by country in descending order
-SELECT country, SUM(total_laid_off) AS total_off
+-- Total layoffs by country in descending order
+SELECT country, SUM(total_laid_off) AS total_laid_off
 FROM layoffs_staging2
 GROUP BY country
-ORDER BY total_off DESC;
+ORDER BY total_laid_off DESC;
 
--- Companies who got shut off completely
+-- Identifying companies that shut down completely
 SELECT *
 FROM layoffs_staging2
 WHERE percentage_laid_off = 1
 ORDER BY total_laid_off DESC;
 
--- first and last date when laying off started
-SELECT MIN(`date`), MAX(`date`)
+-- Earliest and latest dates of layoffs
+SELECT MIN(`date`) AS first_layoff_date, MAX(`date`) AS last_layoff_date
 FROM layoffs_staging2;
 
--- Total laid off by year in descending order
-SELECT YEAR(`date`), SUM(total_laid_off) AS total_off
+-- Total layoffs by year in descending order
+SELECT YEAR(`date`) AS year, SUM(total_laid_off) AS total_laid_off
 FROM layoffs_staging2
 GROUP BY YEAR(`date`)
-ORDER BY 1 DESC;
+ORDER BY year DESC;
 
--- Time Series of Layoffs my each month in a year
-SELECT SUBSTRING(`date`, 1, 7) AS date, SUM(total_laid_off)
+-- Monthly time series of layoffs
+SELECT DATE_FORMAT(`date`, '%Y-%m') AS month, SUM(total_laid_off) AS total_laid_off
 FROM layoffs_staging2
-WHERE SUBSTRING(`date`, 1, 7) IS NOT NULL
-GROUP BY SUBSTRING(`date`, 1, 7)
-ORDER BY 1 ASC;
+WHERE `date` IS NOT NULL
+GROUP BY month
+ORDER BY month ASC;
 
--- rolling of total laid by each month
-WITH rolling_total AS
-(
-SELECT SUBSTRING(`date`, 1, 7) AS `MONTH`, SUM(total_laid_off) AS total_off
-FROM layoffs_staging2
-WHERE SUBSTRING(`date`, 1, 7) IS NOT NULL
-GROUP BY `MONTH`
-ORDER BY 1 ASC
+-- Rolling total of layoffs by month
+WITH monthly_totals AS (
+    SELECT DATE_FORMAT(`date`, '%Y-%m') AS month, SUM(total_laid_off) AS total_laid_off
+    FROM layoffs_staging2
+    WHERE `date` IS NOT NULL
+    GROUP BY month
+    ORDER BY month ASC
 )
-SELECT `MONTH`, total_off, 
-SUM(total_off) OVER(ORDER BY `MONTH`) AS rolling_total
-FROM rolling_total;
+SELECT month, total_laid_off, 
+       SUM(total_laid_off) OVER(ORDER BY month) AS rolling_total
+FROM monthly_totals;
 
--- Ranking companies with the highest laid offs by each year
-SELECT company, YEAR(`date`), SUM(total_laid_off) AS total_off
+-- Ranking companies with the highest layoffs by year
+SELECT company, YEAR(`date`) AS year, SUM(total_laid_off) AS total_laid_off
 FROM layoffs_staging2
-GROUP BY company, YEAR(`date`)
-ORDER BY 3 DESC;
+GROUP BY company, year
+ORDER BY total_laid_off DESC;
 
-WITH Company_Year(company, years, total_laid_off) AS
-(
-SELECT company, YEAR(`date`), SUM(total_laid_off) AS total_off
-FROM layoffs_staging2
-GROUP BY company, YEAR(`date`)
-ORDER BY 3 DESC
-), Company_Year_Rank AS
-(SELECT *,
-DENSE_RANK() OVER(PARTITION BY years ORDER BY total_laid_off DESC) AS ranking
-FROM Company_Year
-WHERE years IS NOT NULL)
+WITH company_year_summary AS (
+    SELECT company, YEAR(`date`) AS year, SUM(total_laid_off) AS total_laid_off
+    FROM layoffs_staging2
+    GROUP BY company, year
+), company_year_ranked AS (
+    SELECT company, year, total_laid_off,
+           DENSE_RANK() OVER(PARTITION BY year ORDER BY total_laid_off DESC) AS rank
+    FROM company_year_summary
+)
 SELECT *
-FROM Company_Year_Rank
-WHERE ranking <= 5;
+FROM company_year_ranked
+WHERE rank <= 5;
