@@ -1,3 +1,8 @@
+
+## Link to the dashboard(PDF)
+## https://github.com/msulthan07/Data-Analyst-Projects/blob/c14b26e8145189a90ca5cd29132f27a27aeec4e1/Sales%20Insights%20PBI%20Dashboard.pdf
+
+
 # Atliq Enterprises Sales Dashboard
 
 ## Overview  
