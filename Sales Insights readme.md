@@ -1,5 +1,3 @@
-# Define the content for the README.md file
-readme_content = """
 # Atliq Enterprises Sales Dashboard
 
 ## Overview  
@@ -40,13 +38,3 @@ This project involves creating an interactive Power BI dashboard to analyze the 
 
 This dashboard showcases Atliq Enterprises' sales data in an easily digestible format, enabling data-driven decision-making for improving performance in underperforming markets and leveraging strengths in high-profit regions.
 """
-
-# Define the path to save the README.md file
-readme_file_path = "/mnt/data/README.md"
-
-# Write the content to the README.md file
-with open(readme_file_path, "w") as readme_file:
-    readme_file.write(readme_content)
-
-# Return the path of the generated file
-readme_file_path
